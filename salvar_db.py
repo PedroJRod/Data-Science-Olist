@@ -1,9 +1,19 @@
 import os
 import pandas as pd
 from sqlalchemy import create_engine
+from dotenv import load_dotenv
+
+# Carrega as variáveis do arquivo .env
+load_dotenv()
+
+# Recupera as credenciais
+user = os.getenv("POSTGRES_USER")
+password = os.getenv("POSTGRES_PASSWORD")
+host = os.getenv("POSTGRES_HOST")
+db = os.getenv("POSTGRES_DB")
 
 # Configurações de conexão ao banco de dados PostgreSQL
-postgres_url = "postgresql+psycopg2://aluno:PreditivaAlunoGVD@preditiva-postgres-1.cmaonsvyciyn.us-east-1.rds.amazonaws.com/alunos"
+postgres_url = f"postgresql+psycopg2://{user}:{password}@{host}/{db}"
 
 # Conectar ao banco de dados PostgreSQL (origem)
 engine_origem = create_engine(postgres_url)

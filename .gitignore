@@ -5,3 +5,4 @@ __pycache__
 *.pyc
 *.db
 salvar_db.py
+.env
