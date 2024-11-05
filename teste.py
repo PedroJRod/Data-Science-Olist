@@ -1,4 +1,5 @@
-base = ["azul","vermelhor","amarelo"]
+import pandas as pd
 
-for i in base:
-    print(i)
+df = pd.read_sql_table("abt.db")
+
+print(df)
