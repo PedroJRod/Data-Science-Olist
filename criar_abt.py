@@ -26,20 +26,35 @@ engine_destino = create_engine(f"sqlite:///{destino_db}")
 
 # Consultar dados das tabelas com JOIN usando o ClientID
 query = """
-select t2.seller_id,
+select t3.seller_city as cidade,
+t3.seller_state as estado,
+t1.*,
+case when t2.seller_id is null then 1 else 0 end as flag_model
+from( select t2.seller_id,
+max(t1.order_approved_at) as dt_ult_venda,
 sum(t2.price) as receita_total,
 count(distinct t2.order_id) as qtde_vendas,
 sum(t2.price)/count(distinct t2.order_id) as avg_vl_venda,
 count(t2.product_id) as qtde_produto,
 count(distinct t2.product_id) as qtde_prod_distinto,
-sum(t2.price)/count(t2.product_id) as avg_vl_produto 
+sum(t2.price)/count(t2.product_id) as avg_vl_produto
 from db_olist.orders as t1
 left join db_olist.order_items as t2
 on t1.order_id = t2.order_id 
 where t1.order_approved_at between '2016-10-01'
 and '2017-04-01'
 and t1.order_status ='delivered'
-group by t2.seller_id
+group by t2.seller_id) as t1
+left join (select distinct t2.seller_id
+from db_olist.orders as t1
+left join db_olist.order_items as t2
+on t1.order_id = t2.order_id
+where t1.order_approved_at between '2017-04-01'
+and '2017-07-01'
+and t1.order_status = 'delivered') as t2
+on t1.seller_id = t2.seller_id
+left join db_olist.sellers as t3
+on t1.seller_id = t3.seller_id
 """
 
 # Carregar o resultado da consulta em um DataFrame
