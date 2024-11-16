@@ -26,11 +26,13 @@ engine_destino = create_engine(f"sqlite:///{destino_db}")
 
 # Consultar dados das tabelas com JOIN usando o ClientID
 query = """
-select t3.seller_city as cidade,
+select '{date}' as dt_ref,
+t3.seller_city as cidade,
 t3.seller_state as estado,
 t1.*,
 case when t2.seller_id is null then 1 else 0 end as flag_model
 from( select t2.seller_id,
+max(t1.order_approved_at) as dt_ult_venda,
 sum(t2.price) as receita_total,
 count(distinct t2.order_id) as qtde_vendas,
 sum(t2.price)/count(distinct t2.order_id) as avg_vl_venda,
@@ -40,21 +42,21 @@ sum(t2.price)/count(t2.product_id) as avg_vl_produto
 from db_olist.orders as t1
 left join db_olist.order_items as t2
 on t1.order_id = t2.order_id 
-where t1.order_approved_at between '2016-10-01'
-and '2017-04-01'
+WHERE t1.order_approved_at::TIMESTAMP between '{date}'::TIMESTAMP
+AND ('{date}'::TIMESTAMP + INTERVAL '6 MONTHS')
 and t1.order_status ='delivered'
 group by t2.seller_id) as t1
 left join (select distinct t2.seller_id
 from db_olist.orders as t1
 left join db_olist.order_items as t2
 on t1.order_id = t2.order_id
-where t1.order_approved_at between '2017-04-01'
-and '2017-07-01'
+where t1.order_approved_at::TIMESTAMP between ('{date}'::TIMESTAMP + INTERVAL '6 MONTHS')
+and ('{date}'::TIMESTAMP + INTERVAL '9 MONTHS')
 and t1.order_status = 'delivered') as t2
 on t1.seller_id = t2.seller_id
 left join db_olist.sellers as t3
 on t1.seller_id = t3.seller_id
-"""
+""".format(date='2016-10-01')
 
 # Carregar o resultado da consulta em um DataFrame
 df = pd.read_sql(query, engine_origem)

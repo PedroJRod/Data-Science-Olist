@@ -1,9 +1,11 @@
 import pandas as pd
+import numpy as np
 import sqlalchemy
 import os
 from sklearn import tree
 from sklearn import metrics
 
+np.random.seed(144)
 
 PAI_DIR = os.path.dirname( os.path.abspath( __file__ ) )
 DATA_DIR = os.path.join(PAI_DIR, 'data')
