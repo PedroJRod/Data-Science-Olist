@@ -13,7 +13,7 @@ host = os.getenv("POSTGRES_HOST")
 db = os.getenv("POSTGRES_DB")
 
 # Caminho para salvar o banco de dados SQLite
-destino_db = "abt.db"
+destino_db = "data/abt.db"
 
 # Configurações de conexão ao banco de dados PostgreSQL
 postgres_url = f"postgresql+psycopg2://{user}:{password}@{host}/{db}"
@@ -31,7 +31,6 @@ t3.seller_state as estado,
 t1.*,
 case when t2.seller_id is null then 1 else 0 end as flag_model
 from( select t2.seller_id,
-max(t1.order_approved_at) as dt_ult_venda,
 sum(t2.price) as receita_total,
 count(distinct t2.order_id) as qtde_vendas,
 sum(t2.price)/count(distinct t2.order_id) as avg_vl_venda,
