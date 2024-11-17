@@ -24,44 +24,64 @@ engine_origem = create_engine(postgres_url)
 # Criar conexão com o banco de dados SQLite (destino)
 engine_destino = create_engine(f"sqlite:///{destino_db}")
 
-# Consultar dados das tabelas com JOIN usando o ClientID
-query = """
-select '{date}' as dt_ref,
-t3.seller_city as cidade,
-t3.seller_state as estado,
-t1.*,
-case when t2.seller_id is null then 1 else 0 end as flag_model
-from( select t2.seller_id,
-max(t1.order_approved_at) as dt_ult_venda,
-sum(t2.price) as receita_total,
-count(distinct t2.order_id) as qtde_vendas,
-sum(t2.price)/count(distinct t2.order_id) as avg_vl_venda,
-count(t2.product_id) as qtde_produto,
-count(distinct t2.product_id) as qtde_prod_distinto,
-sum(t2.price)/count(t2.product_id) as avg_vl_produto
-from db_olist.orders as t1
-left join db_olist.order_items as t2
-on t1.order_id = t2.order_id 
-WHERE t1.order_approved_at::TIMESTAMP between '{date}'::TIMESTAMP
-AND ('{date}'::TIMESTAMP + INTERVAL '6 MONTHS')
-and t1.order_status ='delivered'
-group by t2.seller_id) as t1
-left join (select distinct t2.seller_id
-from db_olist.orders as t1
-left join db_olist.order_items as t2
-on t1.order_id = t2.order_id
-where t1.order_approved_at::TIMESTAMP between ('{date}'::TIMESTAMP + INTERVAL '6 MONTHS')
-and ('{date}'::TIMESTAMP + INTERVAL '9 MONTHS')
-and t1.order_status = 'delivered') as t2
-on t1.seller_id = t2.seller_id
-left join db_olist.sellers as t3
-on t1.seller_id = t3.seller_id
-""".format(date='2016-10-01')
+# Obter meses distintos
+distinct_months_query = """
+SELECT DISTINCT TO_CHAR(order_approved_at, 'YYYY-MM') AS year_month
+FROM db_olist.orders
+WHERE order_status = 'delivered'
+ORDER BY year_month;
+"""
 
-# Carregar o resultado da consulta em um DataFrame
-df = pd.read_sql(query, engine_origem)
+# Executar consulta e obter os meses distintos
+months = pd.read_sql(distinct_months_query, engine_origem)['year_month'].tolist()
 
-# Salvar o DataFrame no banco de dados SQLite local com o nome 'abt'
-df.to_sql('abt', engine_destino, index=False, if_exists='replace')
 
-print("Dados salvos no banco de dados SQLite local com sucesso.")
+# Iterar sobre os meses e consolidar os dados na tabela 'abt'
+for month in months:
+    print(f"Processando dados para o mês: {month}")
+
+ # Atualizar a consulta com a data do mês atual
+    query = f"""
+    SELECT '{month}-01' AS dt_ref,  -- Data de referência para o mês
+    t3.seller_city AS cidade,
+    t3.seller_state AS estado,
+    t1.*,
+    CASE WHEN t2.seller_id IS NULL THEN 1 ELSE 0 END AS flag_model
+    FROM (
+        SELECT t2.seller_id,
+        MAX(t1.order_approved_at) AS dt_ult_venda,
+        SUM(t2.price) AS receita_total,
+        COUNT(DISTINCT t2.order_id) AS qtde_vendas,
+        SUM(t2.price) / COUNT(DISTINCT t2.order_id) AS avg_vl_venda,
+        COUNT(t2.product_id) AS qtde_produto,
+        COUNT(DISTINCT t2.product_id) AS qtde_prod_distinto,
+        SUM(t2.price) / COUNT(t2.product_id) AS avg_vl_produto
+        FROM db_olist.orders AS t1
+        LEFT JOIN db_olist.order_items AS t2
+        ON t1.order_id = t2.order_id
+        WHERE t1.order_approved_at::TIMESTAMP BETWEEN '{month}-01'::TIMESTAMP
+        AND ('{month}-01'::TIMESTAMP + INTERVAL '6 MONTHS')
+        AND t1.order_status = 'delivered'
+        GROUP BY t2.seller_id
+    ) AS t1
+    LEFT JOIN (
+        SELECT DISTINCT t2.seller_id
+        FROM db_olist.orders AS t1
+        LEFT JOIN db_olist.order_items AS t2
+        ON t1.order_id = t2.order_id
+        WHERE t1.order_approved_at::TIMESTAMP BETWEEN ('{month}-01'::TIMESTAMP + INTERVAL '6 MONTHS')
+        AND ('{month}-01'::TIMESTAMP + INTERVAL '9 MONTHS')
+        AND t1.order_status = 'delivered'
+    ) AS t2
+    ON t1.seller_id = t2.seller_id
+    LEFT JOIN db_olist.sellers AS t3
+    ON t1.seller_id = t3.seller_id;
+    """
+
+    # Executar consulta para o mês atual e carregar os dados no DataFrame
+    df = pd.read_sql(query, engine_origem)
+
+    # Salvar os dados no banco de dados SQLite, consolidando na tabela 'abt'
+    df.to_sql('abt', engine_destino, index=False, if_exists='append')  # Alterado para 'append'
+
+print("Consolidação concluída com sucesso.")
