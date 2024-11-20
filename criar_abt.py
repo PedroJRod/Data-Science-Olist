@@ -35,10 +35,10 @@ def get_query_with_dtref():
     except ValueError:
         print("Formato inválido! Tente novamente com o formato YYYY-MM-DD.")
         return None
-    
+         
     # Query SQL com a data inserida
     query = f"""
-    SELECT {dtref} as dtref,
+    SELECT TO_CHAR('{dtref}'::TIMESTAMP, 'YYYY-MM') as dtref,
     t3.seller_city AS cidade,
     t3.seller_state AS estado,
     t1.*,
