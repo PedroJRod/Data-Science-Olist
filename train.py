@@ -28,7 +28,7 @@ print(df.head())
 columns = df.columns.tolist()
 
 # Variáveis para serem removidas
-to_remove = ['seller_id', 'cidade','estado']
+to_remove = ['dtref','seller_id', 'cidade','estado']
 
 # Variável alvo, target, resposta
 target = 'flag_model'
