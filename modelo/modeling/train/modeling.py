@@ -4,6 +4,7 @@ import sqlalchemy
 from sklearn import tree
 from sklearn import model_selection
 from sklearn import metrics
+from sklearn import preprocessing
 
 MOD_TRAIN_DIR = os.path.dirname(os.path.abspath(__file__))
 MODELING_DIR = os.path.dirname(MOD_TRAIN_DIR)
@@ -28,6 +29,7 @@ X_train, X_test, y_train, y_teste = model_selection.train_test_split(df_abt[feat
                                                                      df_abt[target],
                                                                      test_size=0.2,
                                                                      random_state=1992)
+
 
 clf = tree.DecisionTreeClassifier()
 clf.fit(X_train,y_train)
