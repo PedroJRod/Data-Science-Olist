@@ -5,6 +5,7 @@ from sklearn import model_selection
 from sklearn import metrics
 from sklearn import preprocessing
 import pandas as pd
+from sqlalchemy import create_engine
 
 MOD_TRAIN_DIR = os.path.dirname(os.path.abspath(__file__))
 MODELING_DIR = os.path.dirname(MOD_TRAIN_DIR)
@@ -56,10 +57,12 @@ y_train_pred = clf.predict( X_train )
 acc_train = metrics.accuracy_score(y_train, y_train_pred)
 print("Base Treino:", acc_train)
 
+# Analise na base de teste
 y_test_pred = clf.predict( X_test )
 acc_test = metrics.accuracy_score(y_test, y_test_pred)
 print("Base Teste:", acc_test )
 
+# Analise na base de out of time
 oot_pred = clf.predict( df_oot[features] )
 acc_oot = metrics.accuracy_score(df_oot[target], oot_pred)
 print("Base out of time:", acc_oot)
@@ -67,4 +70,11 @@ print("Base out of time:", acc_oot)
 probs = clf.predict_proba( abt[features] )
 abt['score_churn'] = clf.predict_proba( abt[features] )[:,1]
 abt_score = abt[[ 'dtref','seller_id', 'score_churn']]
-# abt_score.to_sql( 'tb_churn_score', engine, index=False, if_exists='replace' )
+
+
+# Caminho para salvar o banco de dados SQLite
+destino_db = "data/tb_churn_score.db"
+# Criar conexão com o banco de dados SQLite (destino)
+engine_destino = create_engine(f"sqlite:///{destino_db}")
+
+abt_score.to_sql( 'tb_churn_score', engine_destino, index=False, if_exists='replace' )
